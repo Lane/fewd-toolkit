@@ -1,0 +1,50 @@
+{
+  "name": "fewd",
+  "build": {
+    "config": {
+      "browser-sync": {
+        "server": {
+          "baseDir": "./test/build/web"
+        },
+        "logLevel": "warn",
+        "notify": true,
+        "open": false,
+        "logFileChanges": false,
+        "ui": {
+          "enabled": true
+        }
+      }
+    },
+    "items": [
+      {
+        "name": "coffee",
+        "config": {
+          "lint": true
+        },
+        "items": [
+          {
+            "src": ["./test/src/*.coffee"],
+            "dst": "test-compile.js",
+            "config": {}
+          }
+        ]
+      }
+    ]
+  },
+  "deploy": {
+    "production": {
+      "s3": {
+        "region": "us-west-2",
+        "bucket": "release-planning.onlea.org"
+      }
+    },
+    "staging": {
+      "s3": {
+        "region": "us-west-2",
+        "bucket": "release-planning-staging.onlea.org"
+      }
+    }
+  },
+  "docs" : {},
+  "test" : {}
+}

@@ -1,0 +1,11 @@
+{
+  "name": "fewd-build",
+  "version": "1.0.0",
+  "description": "built tool for fewd",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lane Olson",
+  "license": "ISC"
+}
