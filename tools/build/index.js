@@ -3,66 +3,136 @@
 /*jslint esversion: 6 */
 
 'use strict';
-var union = require('lodash.union');
-var logger = require('../../lib/fewd-logger');
-var FewdCommand = require('../../lib/fewd-command.js');
 
-class BuildCommand extends FewdCommand {
+let Fewd = null;
 
+/* Class for the build command for FEWD toolkit */
+class FewdBuild {
+  /**
+   * create the build command
+   * @param {Fewd} Fewd - instance of Fewd to add the command to
+   */
+  constructor(FewdInst) {
+    this.config = Fewd.getConfig("build");
+    this.buildItems = Fewd.getConfig("build", "items");
+    this.Fewd = Fewd = FewdInst;
+  }
+
+  /**
+   * gets the configuration object for the build item in config.build.items
+   * @param {string} itemName - the name of the build item
+   * @return {object} - the configuration object for the item
+   */
+  getConfigItem(itemName) {
+    this.buildItems.forEach( (item) => {
+      if(item.name === itemName) { return item; }
+    });
+    return false;
+  }
+
+  createTask(item) {
+    let handler, handlerName;
+    let failed = false;
+    if(item.handler) {
+      handlerName = item.handler;
+    } else {
+      handlerName = "./tasks/" + item.name;
+    }
+    handler = this.Fewd.loadModule(handlerName);
+    if(handler) {
+      // create the task item
+      let taskItem = (new this.Fewd.Task(item.name, item, this.Fewd));
+      taskItem.addHandler(handler);
+      return taskItem;
+    }
+    return false;
+  }
+
+  getTaskList() {
+    this.buildItems.forEach( (item) => {
+      let buildTask = this.createTask(item);
+      if(buildTask) {
+        this.taskList.push(buildTask);
+      }
+    });
+    return this.taskList;
+  }
+
+  /**
+   * @return {object} - contains two arrays with keys list and actions.
+   */
+  getBuildTasks() {
+
+    return {
+      list: [],
+      actions: []
+    };
+  }
+
+  /**
+   * build action for the build command
+   */
+  build() {
+    let buildTasks = this.getTaskList();
+    return this.Fewd.runTasks(buildTasks.list, function() {
+      return this.startDev(buildTasks.actions);
+    });
+  }
 }
+
 
 var buildFunction = function (Fewd) {
 
-  var buildConfig = Fewd.getConfig("build");
-  var buildItemsConfig = Fewd.getConfig("build", "items");
+  // var buildConfig = Fewd.getConfig("build");
+  // var buildItemsConfig = Fewd.getConfig("build", "items");
+  //
+  // // TODO: move to task
+  // var isBatch = function(taskConfig) {
+  //   if(taskConfig.hasOwnProperty("items")) {
+  //     return true;
+  //   }
+  // };
+  //
+  //
+  // var getConfigItem = function(itemName) {
+  //   for(var i = 0; i < buildItemsConfig.length; i++) {
+  //     if(buildItemsConfig[i].name === itemName) {
+  //       return buildItemsConfig[i];
+  //     }
+  //   }
+  //   return false;
+  // };
 
-  // TODO: move to task
-  var isBatch = function(taskConfig) {
-    if(taskConfig.hasOwnProperty("items")) {
-      return true;
-    }
-  };
-
-  // gets the configuration object for the build item
-  // in config.build.items
-  var getConfigItem = function(itemName) {
-    for(var i = 0; i < buildItemsConfig.length; i++) {
-      if(buildItemsConfig[i].name === itemName) {
-        return buildItemsConfig[i];
-      }
-    }
-    return false;
-  };
 
   // combines the `src` parameter of all of the batches
   // for the watch task
-  var getSourceFiles = function(task) {
-    var i, item, len, sources;
-    var taskConfig = getConfigItem(task);
-    sources = [];
-    if (isBatch(taskConfig)) {
-      for (i = 0, len = taskConfig.length; i < len; i++) {
-        item = taskConfig[i];
-        if (item.hasOwnProperty("src")) {
-          // an array of batch objects
-          sources = union(sources, item.src);
-        } else {
-          logger.error("Error: Missing `src` in configuration.", item);
-        }
-      }
-    } else {
-      return taskConfig.src;
-    }
-    return sources;
-  };
+  // var getSourceFiles = function(task) {
+  //   var i, item, len, sources;
+  //   var taskConfig = getConfigItem(task);
+  //   sources = [];
+  //   if (isBatch(taskConfig)) {
+  //     for (i = 0, len = taskConfig.length; i < len; i++) {
+  //       item = taskConfig[i];
+  //       if (item.hasOwnProperty("src")) {
+  //         // an array of batch objects
+  //         sources = union(sources, item.src);
+  //       } else {
+  //         logger.error("Error: Missing `src` in configuration.", item);
+  //       }
+  //     }
+  //   } else {
+  //     return taskConfig.src;
+  //   }
+  //   return sources;
+  // };
 
   // gets the FEWD build function for the provided `taskName`
   var getBuildFunction = function(taskName) {
     var itemConfig = getConfigItem(taskName);
     if (itemConfig) {
       var FewdTask = require('./tasks/fewd-build-' + taskName);
-      var taskItem = (new FewdTask(taskName, itemConfig, Fewd));
-      taskItem.src = getSourceFiles(taskName);
+      var taskItem = (new Fewd.Task(taskName, itemConfig, Fewd));
+      // taskItem.src = getSourceFiles(taskName);
       return taskItem;
     } else {
       logger.error("Error: Could not find config for `" + taskName + "`.");

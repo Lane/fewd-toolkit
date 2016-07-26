@@ -5,9 +5,10 @@
 var util = require('util');
 var gulp = require('gulp');
 var runSequence = require('run-sequence').use(gulp);
-var logger = require('./lib/fewd-logger');
+var FewdLogger = require('./lib/fewd-logger');
 var FewdCommand = require('./lib/fewd-command');
 var FewdTask = require('./lib/fewd-task');
+var FewdBatch = require('./lib/fewd-batch');
 
 // returns the value of a property in an object
 var getConfigProperty = function(configObj, prop) {
@@ -15,10 +16,10 @@ var getConfigProperty = function(configObj, prop) {
     if(configObj.hasOwnProperty(prop)) {
       return configObj[prop];
     } else {
-      logger.error("Error: property `" + prop + "` does not exist ");
+      FewdLogger.error("Error: property `" + prop + "` does not exist ");
     }
   } else {
-    logger.error("Error: invalid property when getting config.");
+    FewdLogger.error("Error: invalid property when getting config.");
   }
   return false;
 };
@@ -62,7 +63,26 @@ Fewd.prototype.addCommand = function (name, description, action, options) {
   return command;
 };
 
+Fewd.prototype.loadModule = function(moduleName) {
+  var failError = false;
+  var mod = false;
+  try {
+    mod = require(moduleName);
+  } catch (_error) {
+    failError = _error;
+  } finally {
+    if(failError) {
+      this.log("Error loading '" + moduleName + "'.", failError);
+      return false;
+    }
+    return mod;
+  }
+};
+
 Fewd.prototype.Task = FewdTask;
+Fewd.prototype.Batch = FewdBatch;
+Fewd.prototype.Command = FewdCommand;
+Fewd.prototype.log = FewdLogger;
 
 // inst.task("default", function() { console.log("handling default"); });
 // inst.start.apply(inst, ['default']);
