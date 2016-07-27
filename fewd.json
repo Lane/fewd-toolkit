@@ -1,5 +1,6 @@
 {
   "name": "fewd",
+  "hello": "WORLD",
   "build": {
     "config": {
       "browser-sync": {
@@ -35,13 +36,13 @@
     "production": {
       "s3": {
         "region": "us-west-2",
-        "bucket": "release-planning.onlea.org"
+        "bucket": "fewd-bucket-production"
       }
     },
     "staging": {
       "s3": {
         "region": "us-west-2",
-        "bucket": "release-planning-staging.onlea.org"
+        "bucket": "fewd-bucket-staging"
       }
     }
   },

@@ -1,92 +1,130 @@
-
 /*jslint node: true */
+/*jslint esversion: 6 */
 'use strict';
 
 var util = require('util');
-var gulp = require('gulp');
-var runSequence = require('run-sequence').use(gulp);
 var FewdLogger = require('./lib/fewd-logger');
 var FewdCommand = require('./lib/fewd-command');
-var FewdTask = require('./lib/fewd-task');
-var FewdBatch = require('./lib/fewd-batch');
+// var FewdTask = require('./lib/fewd-task');
+// var FewdBatch = require('./lib/fewd-batch');
 
-// returns the value of a property in an object
-var getConfigProperty = function(configObj, prop) {
-  if(typeof prop === 'string') {
-    if(configObj.hasOwnProperty(prop)) {
-      return configObj[prop];
+/** Base class for the FEWD Toolkit. */
+class Fewd {
+  /**
+   * creates an instance of the FEWD toolkit
+   * @param {object} - the configuration JSON for FEWD toolkit
+   */
+  constructor(config) {
+    this.config = config;
+  }
+
+  /**
+   * finds a property on the configuration object passed
+   * @param {object} configObj - the configuration object to search
+   * @param {string} prop - the key to search for
+   * @returns value of a property in the configObj
+   */
+  getConfigProperty(configObj, prop) {
+    if(typeof prop === 'string') {
+      if(configObj.hasOwnProperty(prop)) {
+        return configObj[prop];
+      } else {
+        this.logger.info("No configuration key found for `" + prop + "`.");
+      }
     } else {
-      FewdLogger.error("Error: property `" + prop + "` does not exist ");
+      this.logger.error("Error: invalid property when getting config.");
     }
-  } else {
-    FewdLogger.error("Error: invalid property when getting config.");
+    return false;
   }
-  return false;
-};
+
+  /**
+   * gets a configuration property based on a variable number of arguments
+   * @param {Array} arguments - arguments are a list of strings, in order,
+   *  to retrieve from the configuration object.
+   * @returns the value of the configuration item specified, or false if the
+   *  configurtion was not found.
+   */
+  getConfig() {
+    var args = Array.from(arguments);
+    var config = this.config;
+    for(var i = 0; i < args.length; i++) {
+      if(typeof config === 'object') {
+        config = this.getConfigProperty(config, args[i]);
+      }
+    }
+    return config;
+  }
+
+  /**
+   * loads an npm module using require
+   * @param {string} moduleName - the module name, or the path to load using
+   *  require.
+   * @returns the module that was loaded, or false if there is an error.
+   */
+  loadModule(moduleName) {
+    let failError = false;
+    let mod = false;
+    try {
+      mod = require(moduleName);
+    } catch (_error) {
+      failError = _error;
+    } finally {
+      if(failError) {
+        this.log("Error loading '" + moduleName + "'.", failError);
+        return false;
+      }
+      return mod;
+    }
+  }
+
+  /**
+   * Set the logger to use for the FEWD toolkit
+   */
+  setLogger(logger) { this.logger = logger; }
+
+  /**
+   * Logs an item using FEWD toolkit's logger
+   */
+  log() { return this.logger.apply(this, arguments); }
+
+  /**
+   * Sets the tool to use for the CLI.
+   * @param {Commander} an instance of Commander
+   *  https://www.npmjs.com/package/commander
+   */
+  setCLI(program) { this.program = program; }
+
+  /**
+   * Gets the CLI tool set to this instance
+   * @return {Commander || false} returns the Commander instance, or false if
+   *  no CLI tool has been set.
+   */
+  getCLI() { return this.program; }
 
 
-function Fewd(config) {
-  this.config = config;
-  this.gulp = gulp;
-  this.program = false;
+  // Command() { return FewdCommand; }
+
+  /**
+   * creates a command and adds it to this FEWD toolkit instance
+   */
+  createCommand(name, description, action, options) {
+    let command = new this.Command(name, description, options);
+    if(typeof action === "function") {
+      command.addAction(action);
+    }
+    command.addToInstance(this);
+    return command;
+  }
+
 }
-// util.inherits(Fewd, gulp.Gulp);
 
-Fewd.prototype.useGulp = function() { return this.gulp; };
-
-// functions for setting up the command line tool
-Fewd.prototype.setCommander = function (program) { this.program = program; };
-Fewd.prototype.getCommander = function () { return this.program; };
-Fewd.prototype.isCommanderSet = function () { return this.program; };
-
-Fewd.prototype.getConfig = function () {
-  var args = Array.from(arguments);
-  var config = this.config;
-  for(var i = 0; i < args.length; i++) {
-    if(typeof config === 'object') {
-      config = getConfigProperty(config, args[i]);
-    }
-  }
-  return config;
-};
-
-Fewd.prototype.getConfigItem = function(name) {
-
-};
-
-Fewd.prototype.runTasks = runSequence;
-
-// adds the command to the program, with the description, options, and handler.
-Fewd.prototype.addCommand = function (name, description, action, options) {
-  var _this = this;
-  var command = new FewdCommand(_this, name, description, action, options);
-  return command;
-};
-
-Fewd.prototype.loadModule = function(moduleName) {
-  var failError = false;
-  var mod = false;
-  try {
-    mod = require(moduleName);
-  } catch (_error) {
-    failError = _error;
-  } finally {
-    if(failError) {
-      this.log("Error loading '" + moduleName + "'.", failError);
-      return false;
-    }
-    return mod;
-  }
-};
-
-Fewd.prototype.Task = FewdTask;
-Fewd.prototype.Batch = FewdBatch;
+/**
+ * Exposes to the FewdCommand class so it can be extended
+ * @return {FewdCommand} the FewdCommand class for extending
+ */
 Fewd.prototype.Command = FewdCommand;
-Fewd.prototype.log = FewdLogger;
 
-// inst.task("default", function() { console.log("handling default"); });
-// inst.start.apply(inst, ['default']);
-
+// export a function that creates a new instance of Fewd.
 module.exports = function (config) {
   return (new Fewd(config));
 };
