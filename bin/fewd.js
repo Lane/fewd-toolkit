@@ -19,6 +19,13 @@ fewdInst.setCLI(program);
 // set console as the logger, for now.
 fewdInst.setLogger(console);
 
+// get command items
+class FewdCli extends FewdItem {
+
+  createCommand() {}
+
+}
+
 // add base commands
 let command = fewdInst.createCommand("hello", "this will say hello to you");
 command.beforeRun(() => { console.log("preparing to say hello"); });

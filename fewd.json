@@ -1,51 +1,104 @@
 {
   "name": "fewd",
-  "hello": "WORLD",
-  "build": {
-    "config": {
-      "browser-sync": {
-        "server": {
-          "baseDir": "./test/build/web"
+  "items": [
+    {
+      "name": "hello",
+      "config": {
+        "cli": {
+          "command": "hello",
+          "description": "say hello to the recipient"
         },
-        "logLevel": "warn",
-        "notify": true,
-        "open": false,
-        "logFileChanges": false,
-        "ui": {
-          "enabled": true
+        "recipient": "world"
+      }
+    },
+    {
+      "name": "build",
+      "handler": "fewd-build",
+      "config": {
+        "cli": {
+          "command": "build <item> [otherItems...]",
+          "description": "performs a build of all the source code",
+          "options": [
+            {
+              "flags": "-d, --develop",
+              "description": "starts a local server, watches files for changes after build"
+            },
+            {
+              "flags": "-r, --release",
+              "description": "performs the build with minification"
+            },
+            {
+              "flags": "-m, --minify",
+              "description": "concatenate and minify source files"
+            },
+            {
+              "flags": "-o, --optimize",
+              "description": "optimize the images during the build"
+            },
+            {
+              "flags": "-c, --clean",
+              "description": "clears build directories before performing the build"
+            }
+          ]
         }
-      }
+      },
+      "items": [
+        {
+          "name": "coffee",
+          "handler":"",
+          "config": {
+            "lint": true
+          },
+          "items": [
+            {
+              "src": ["./test/src/*.coffee"],
+              "dst": "test-compile.js",
+              "config": {}
+            }
+          ]
+        }
+      ]
     },
-    "items": [
-      {
-        "name": "coffee",
-        "config": {
-          "lint": true
+    {
+      "name": "deploy",
+      "handler": "fewd-deploy",
+      "config": {
+        "cli": {
+          "command": "deploy <item> [otherItems...]",
+          "description": "deploy your project to an endpoint",
+          "options": []
+        }
+      },
+      "items": [
+        {
+          "name": "production",
+          "handler": "s3",
+          "config": {
+            "region": "us-west-2",
+            "bucket": "fewd-bucket-production"
+          },
+          "items": [
+            {
+              "dst":"",
+              "src":""
+            }
+          ]
         },
-        "items": [
-          {
-            "src": ["./test/src/*.coffee"],
-            "dst": "test-compile.js",
-            "config": {}
-          }
-        ]
-      }
-    ]
-  },
-  "deploy": {
-    "production": {
-      "s3": {
-        "region": "us-west-2",
-        "bucket": "fewd-bucket-production"
-      }
-    },
-    "staging": {
-      "s3": {
-        "region": "us-west-2",
-        "bucket": "fewd-bucket-staging"
-      }
+        {
+          "name": "staging",
+          "handler": "s3",
+          "config": {
+            "region": "us-west-2",
+            "bucket": "fewd-bucket-staging"
+          },
+          "items": [
+            {
+              "dst":"",
+              "src":""
+            }
+          ]
+        }
+      ]
     }
-  },
-  "docs" : {},
-  "test" : {}
+  ]
 }
